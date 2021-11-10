@@ -58,7 +58,7 @@ public class Expression {
     }
 
     private void redo() {
-        throw new RuntimeException("unsupported operation: redo");
+        throw new RuntimeException(this.log("unsupported operation: redo"));
     }
 
     private void undo() {
