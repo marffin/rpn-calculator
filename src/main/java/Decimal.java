@@ -48,9 +48,9 @@ public class Decimal {
         return new Decimal(val);
     }
 
-    public static Decimal substract(Decimal d2, Decimal d1) {
-        double val = d2.getVal() - d1.getVal();
-        if (d1.getIsInteger() && d2.getIsInteger())
+    public static Decimal substract(Decimal d1, Decimal d2) {
+        double val = d1.getVal() - d2.getVal();
+        if (d2.getIsInteger() && d1.getIsInteger())
             return new Decimal((int)val);
         return new Decimal(val);
     }
@@ -62,17 +62,17 @@ public class Decimal {
         return new Decimal(val);
     }
 
-    public static Decimal divide(Decimal d2, Decimal d1) {
-        if (d1.getVal() == 0)
+    public static Decimal divide(Decimal d1, Decimal d2) {
+        if (d2.getVal() == 0)
             throw new ArithmeticException("divide by zero");
-        if (d1.isInteger && d2.isInteger) {
-            int v1 = (int)d1.getVal();
-            int v2 = (int)d2.getVal();
+        if (d2.isInteger && d1.isInteger) {
+            int v1 = (int)d2.getVal();
+            int v2 = (int)d1.getVal();
             int m = v2 % v1;
             if (m == 0)
                 return new Decimal(v2 / v1);
         }
-        return new Decimal(d2.getVal() / d1.getVal());
+        return new Decimal(d1.getVal() / d2.getVal());
     }
 
     public static Decimal sqrt(Decimal d1) {
