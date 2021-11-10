@@ -82,7 +82,7 @@ class ExpressionTest {
         expr.feed("3", 3);
         expr.feed("9", 5);
         expr.feed("sqrt", 7);
-        assertEquals("5 3 3.0", expr.formatStack());
+        assertEquals("5 3 3", expr.formatStack());
         Expression expr1 = new Expression();
         RuntimeException ex = assertThrows(RuntimeException.class, () -> expr1.feed("sqrt", 1));
         assertEquals("operator sqrt (position 1): insufficient parameters", ex.getMessage());
@@ -113,7 +113,7 @@ class ExpressionTest {
         expr.feed("3", 10);
         expr.feed("9", 12);
         expr.feed("sqrt", 14);
-        assertEquals("5 3 3.0", expr.formatStack());
+        assertEquals("5 3 3", expr.formatStack());
         expr.feed("undo", 19);
         assertEquals("5 3 9", expr.formatStack());
     }
@@ -125,7 +125,7 @@ class ExpressionTest {
         expr.feed("3", 3);
         expr.feed("9", 5);
         expr.feed("sqrt", 7);
-        assertEquals("5 3 3.0", expr.formatStack());
+        assertEquals("5 3 3", expr.formatStack());
         expr.feed("undo", 12);
         assertEquals("5 3 9", expr.formatStack());
         expr.feed("undo", 17);

@@ -3,7 +3,6 @@ import java.util.LinkedList;
 import java.util.StringJoiner;
 
 public class Expression {
-    private static final String REDO = "redo";
     private static final String UNDO = "undo";
     private static final String CLEAR = "clear";
     private static final String SQRT = "sqrt";
@@ -24,7 +23,7 @@ public class Expression {
         try {
             Decimal d = Decimal.parse(token);
             operands.add(d);
-            operations.add(new Operation(1, new Decimal[]{}, null));
+            operations.add(new Operation(new Decimal[]{}, new Decimal[]{d}, null));
         } catch (NumberFormatException ex) {
             switch (token) {
                 case ADD:
@@ -48,30 +47,23 @@ public class Expression {
                 case UNDO:
                     this.undo();
                     break;
-                case REDO:
-                    this.redo();
-                    break;
                 default:
                     throw new UnsupportedOperationException(this.log("unsupported operator: " + token));
             }
         }
     }
 
-    private void redo() {
-        throw new RuntimeException(this.log("unsupported operation: redo"));
-    }
-
     private void undo() {
         if (this.operations.size() == 0)
             return;
         Operation operation = this.operations.removeLast();
-        for (int i = 0; i < operation.getOffset(); i++)
+        for (int i = 0; i < operation.getOutput().length; i++)
             this.operands.removeLast();
-        Collections.addAll(this.operands, operation.getTops());
+        Collections.addAll(this.operands, operation.getInput());
     }
 
     private void clear() {
-        Operation operation = new Operation(this.operands.size(), this.operands.toArray(new Decimal[0]), CLEAR);
+        Operation operation = new Operation(this.operands.toArray(new Decimal[0]), new Decimal[]{}, CLEAR);
         this.operations.add(operation);
         this.operands.clear();
     }
@@ -87,7 +79,7 @@ public class Expression {
             this.operands.add(d1);
             throw new RuntimeException(this.log(ex.getMessage()));
         }
-        Operation operation = new Operation(1, new Decimal[]{d1}, SQRT);
+        Operation operation = new Operation(new Decimal[]{d1}, new Decimal[]{d2}, SQRT);
         this.operands.add(d2);
         this.operations.add(operation);
     }
@@ -105,7 +97,7 @@ public class Expression {
             this.operands.add(d1);
             throw new RuntimeException(this.log(ex.getMessage()));
         }
-        Operation operation = new Operation(1, new Decimal[]{d2, d1}, DIVIDE);
+        Operation operation = new Operation(new Decimal[]{d2, d1}, new Decimal[]{d3}, DIVIDE);
         this.operands.add(d3);
         this.operations.add(operation);
     }
@@ -116,7 +108,7 @@ public class Expression {
         Decimal d1 = this.operands.removeLast();
         Decimal d2 = this.operands.removeLast();
         Decimal d3 = Decimal.multiply(d1, d2);
-        Operation operation = new Operation(1, new Decimal[]{d2, d1}, MULTIPLY);
+        Operation operation = new Operation(new Decimal[]{d2, d1}, new Decimal[]{d3}, MULTIPLY);
         this.operands.add(d3);
         this.operations.add(operation);
     }
@@ -127,7 +119,7 @@ public class Expression {
         Decimal d1 = this.operands.removeLast();
         Decimal d2 = this.operands.removeLast();
         Decimal d3 = Decimal.substract(d2, d1);
-        Operation operation = new Operation(1, new Decimal[]{d2, d1}, SUBSTRACT);
+        Operation operation = new Operation(new Decimal[]{d2, d1}, new Decimal[]{d3}, SUBSTRACT);
         this.operands.add(d3);
         this.operations.add(operation);
     }
@@ -138,7 +130,7 @@ public class Expression {
         Decimal d1 = this.operands.removeLast();
         Decimal d2 = this.operands.removeLast();
         Decimal d3 = Decimal.add(d1, d2);
-        Operation operation = new Operation(1, new Decimal[]{d2, d1}, ADD);
+        Operation operation = new Operation(new Decimal[]{d2, d1}, new Decimal[]{d3}, ADD);
         this.operands.add(d3);
         this.operations.add(operation);
     }
