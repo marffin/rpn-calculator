@@ -26,7 +26,7 @@ public class Decimal {
     public String toString() {
         if (this.isInteger)
             return String.valueOf((int)this.val);
-        DecimalFormat df = new DecimalFormat(".##########");
+        DecimalFormat df = new DecimalFormat("#.##########");
         df.setRoundingMode(RoundingMode.DOWN);
         return df.format(this.val);
     }
