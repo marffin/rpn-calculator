@@ -1,15 +1,16 @@
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.StringJoiner;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.*;
 
 public class Expression {
-    private static final String UNDO = "undo";
-    private static final String CLEAR = "clear";
-    private static final String SQRT = "sqrt";
-    private static final String DIVIDE = "/";
-    private static final String MULTIPLY = "*";
-    private static final String SUBSTRACT = "-";
-    private static final String ADD = "+";
+    private final HashMap<String, Operator<String, Integer>> OPERATOR_CONF = new HashMap<String, Operator<String, Integer>>() {{
+        put("+", new Operator<>("add", 2));
+        put("-", new Operator<>("substract", 2));
+        put("*", new Operator<>("multiply", 2));
+        put("/", new Operator<>("divide", 2));
+        put("sqrt", new Operator<>("sqrt", 1));
+        put("clear", new Operator<>("clear", -1));  // -1 = all
+    }};
 
     private final LinkedList<Decimal> operands = new LinkedList<>();
     private final LinkedList<Operation> operations = new LinkedList<>();
@@ -25,32 +26,42 @@ public class Expression {
             operands.add(d);
             operations.add(new Operation(new Decimal[]{}, new Decimal[]{d}, null));
         } catch (NumberFormatException ex) {
-            switch (token) {
-                case ADD:
-                    this.add();
-                    break;
-                case SUBSTRACT:
-                    this.substract();
-                    break;
-                case MULTIPLY:
-                    this.multiply();
-                    break;
-                case DIVIDE:
-                    this.divide();
-                    break;
-                case SQRT:
-                    this.sqrt();
-                    break;
-                case CLEAR:
-                    this.clear();
-                    break;
-                case UNDO:
-                    this.undo();
-                    break;
-                default:
-                    throw new UnsupportedOperationException(this.log("unsupported operator: " + token));
+            try {
+                Operator<String, Integer> entry = OPERATOR_CONF.get(token);
+                if (entry == null) {
+                    // undo and redo or other operator that concerns with operations rather than operands
+                    switch (token) {
+                        case "undo":
+                            undo();
+                            break;
+                        default:
+                            throw new RuntimeException(this.log("Unsupported operator: %s"));
+                    }
+                } else
+                    calculate(entry);
+            } catch (InvocationTargetException e) {
+                throw new RuntimeException(this.log(e.getMessage()));
+            } catch (NoSuchMethodException | IllegalAccessException e) {
+                throw new RuntimeException(this.log("Implementation missing for operator: " + token));
             }
         }
+    }
+
+    private void calculate(Operator<String, Integer> op) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        if (this.operands.size() < op.getValue())
+            throw new RuntimeException(this.log("insufficient parameters"));
+        int inputSize = op.getValue();
+        if (inputSize == -1)
+            inputSize = this.operands.size();
+        Decimal[] input = this.operands.subList(this.operands.size() - inputSize, this.operands.size()).toArray(new Decimal[0]).clone();
+        Method opMethod = this.getClass().getDeclaredMethod(op.getKey(), Decimal[].class);
+        opMethod.setAccessible(true);
+        Decimal[] output = (Decimal[]) opMethod.invoke(this, new Object[]{input});
+        for (int i = 0; i < input.length; i++)
+            this.operands.removeLast();
+        Collections.addAll(this.operands, output);
+        Operation operation = new Operation(input, output, op.getKey());
+        this.operations.add(operation);
     }
 
     private void undo() {
@@ -62,77 +73,57 @@ public class Expression {
         Collections.addAll(this.operands, operation.getInput());
     }
 
-    private void clear() {
-        Operation operation = new Operation(this.operands.toArray(new Decimal[0]), new Decimal[]{}, CLEAR);
-        this.operations.add(operation);
-        this.operands.clear();
+    private Decimal[] clear(Decimal[] decimals) {
+        return new Decimal[0];
     }
 
-    private void sqrt() {
-        if (this.operands.size() < 1)
-            throw new RuntimeException(this.log("insufficient parameters"));
-        Decimal d1 = this.operands.removeLast();
-        Decimal d2;
-        try {
-            d2 = Decimal.sqrt(d1);
-        } catch (ArithmeticException ex) {
-            this.operands.add(d1);
-            throw new RuntimeException(this.log(ex.getMessage()));
+    private Decimal[] add(Decimal[] decimals) {
+        Decimal d1 = decimals[0];
+        Decimal d2 = decimals[1];
+        double val = d1.getVal() + d2.getVal();
+        if (d1.getIsInteger() && d2.getIsInteger())
+            return new Decimal[]{new Decimal((int)val)};
+        return new Decimal[]{new Decimal(val)};
+    }
+
+    private Decimal[] substract(Decimal[] decimals) {
+        Decimal d1 = decimals[0];
+        Decimal d2 = decimals[1];
+        double val = d1.getVal() - d2.getVal();
+        if (d2.getIsInteger() && d1.getIsInteger())
+            return new Decimal[]{new Decimal((int)val)};
+        return new Decimal[]{new Decimal(val)};
+    }
+
+    private Decimal[] multiply(Decimal[] decimals) {
+        Decimal d1 = decimals[0];
+        Decimal d2 = decimals[1];
+        double val = d1.getVal() * d2.getVal();
+        if (d1.getIsInteger() && d2.getIsInteger())
+            return new Decimal[]{new Decimal((int)val)};
+        return new Decimal[]{new Decimal(val)};
+    }
+
+    private Decimal[] divide(Decimal[] decimals) {
+        Decimal d1 = decimals[0];
+        Decimal d2 = decimals[1];
+        if (d2.getVal() == 0)
+            throw new ArithmeticException("divide by zero");
+        if (d2.getIsInteger() && d1.getIsInteger()) {
+            int v1 = (int)d2.getVal();
+            int v2 = (int)d1.getVal();
+            int m = v2 % v1;
+            if (m == 0)
+                return new Decimal[]{new Decimal(v2 / v1)};
         }
-        Operation operation = new Operation(new Decimal[]{d1}, new Decimal[]{d2}, SQRT);
-        this.operands.add(d2);
-        this.operations.add(operation);
+        return new Decimal[]{new Decimal(d1.getVal() / d2.getVal())};
     }
 
-    private void divide() {
-        if (this.operands.size() < 2)
-            throw new RuntimeException(this.log("insufficient parameters"));
-        Decimal d1 = this.operands.removeLast();
-        Decimal d2 = this.operands.removeLast();
-        Decimal d3;
-        try {
-            d3 = Decimal.divide(d2, d1);
-        } catch (ArithmeticException ex) {
-            this.operands.add(d2);
-            this.operands.add(d1);
-            throw new RuntimeException(this.log(ex.getMessage()));
-        }
-        Operation operation = new Operation(new Decimal[]{d2, d1}, new Decimal[]{d3}, DIVIDE);
-        this.operands.add(d3);
-        this.operations.add(operation);
-    }
-
-    private void multiply() {
-        if (this.operands.size() < 2)
-            throw new RuntimeException(this.log("insufficient parameters"));
-        Decimal d1 = this.operands.removeLast();
-        Decimal d2 = this.operands.removeLast();
-        Decimal d3 = Decimal.multiply(d1, d2);
-        Operation operation = new Operation(new Decimal[]{d2, d1}, new Decimal[]{d3}, MULTIPLY);
-        this.operands.add(d3);
-        this.operations.add(operation);
-    }
-
-    private void substract() {
-        if (this.operands.size() < 2)
-            throw new RuntimeException(this.log("insufficient parameters"));
-        Decimal d1 = this.operands.removeLast();
-        Decimal d2 = this.operands.removeLast();
-        Decimal d3 = Decimal.substract(d2, d1);
-        Operation operation = new Operation(new Decimal[]{d2, d1}, new Decimal[]{d3}, SUBSTRACT);
-        this.operands.add(d3);
-        this.operations.add(operation);
-    }
-
-    private void add() {
-        if (this.operands.size() < 2)
-            throw new RuntimeException(this.log("insufficient parameters"));
-        Decimal d1 = this.operands.removeLast();
-        Decimal d2 = this.operands.removeLast();
-        Decimal d3 = Decimal.add(d1, d2);
-        Operation operation = new Operation(new Decimal[]{d2, d1}, new Decimal[]{d3}, ADD);
-        this.operands.add(d3);
-        this.operations.add(operation);
+    private Decimal[] sqrt(Decimal[] decimals) {
+        Decimal d1 = decimals[0];
+        if (d1.getVal() < 0)
+            throw new ArithmeticException("square root of negative value: " + d1.toString());
+        return new Decimal[]{new Decimal(Math.sqrt(d1.getVal()))};
     }
 
     private String log(String msg) {
