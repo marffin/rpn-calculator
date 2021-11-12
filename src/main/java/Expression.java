@@ -1,22 +1,23 @@
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.*;
 
 public class Expression {
-    private final HashMap<String, Operator<String, Integer>> OPERATOR_CONF = new HashMap<String, Operator<String, Integer>>() {{
-        put("+", new Operator<>("add", 2));
-        put("-", new Operator<>("substract", 2));
-        put("*", new Operator<>("multiply", 2));
-        put("/", new Operator<>("divide", 2));
-        put("sqrt", new Operator<>("sqrt", 1));
-        put("clear", new Operator<>("clear", -1));  // -1 = all
-    }};
+    private final Map<String, Operator> operators = new HashMap<>();
 
     private final LinkedList<Decimal> operands = new LinkedList<>();
     private final LinkedList<Operation> operations = new LinkedList<>();
 
     private String currentToken;
     private int currentPosition;
+
+    public Expression() {
+        operators.put("+", new Operator("add", this::add, 2));
+        operators.put("-", new Operator("subtract", this::substract, 2));
+        operators.put("*", new Operator("multiply", this::multiply, 2));
+        operators.put("/", new Operator("divide", this::divide, 2));
+        operators.put("sqrt", new Operator("clear", this::sqrt, 1));
+        operators.put("clear", new Operator("clear", this::clear, -1));
+    }
 
     public void feed(String token, int position) throws UnsupportedOperationException {
         currentToken = token;
@@ -27,8 +28,10 @@ public class Expression {
             operations.add(new Operation(new Decimal[]{}, new Decimal[]{d}, null));
         } catch (NumberFormatException ex) {
             try {
-                Operator<String, Integer> entry = OPERATOR_CONF.get(token);
-                if (entry == null) {
+                if (operators.containsKey(token)) {
+                    Operator op = operators.get(token);
+                    calculate(op);
+                } else {
                     // undo and redo or other operator that concerns with operations rather than operands
                     switch (token) {
                         case "undo":
@@ -37,8 +40,7 @@ public class Expression {
                         default:
                             throw new RuntimeException(this.log("Unsupported operator: %s"));
                     }
-                } else
-                    calculate(entry);
+                }
             } catch (InvocationTargetException e) {
                 throw new RuntimeException(this.log(e.getMessage()));
             } catch (NoSuchMethodException | IllegalAccessException e) {
@@ -47,20 +49,18 @@ public class Expression {
         }
     }
 
-    private void calculate(Operator<String, Integer> op) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        if (this.operands.size() < op.getValue())
+    private void calculate(Operator op) throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        int inputSize = op.getInputSize();
+        if (this.operands.size() < inputSize)
             throw new RuntimeException(this.log("insufficient parameters"));
-        int inputSize = op.getValue();
         if (inputSize == -1)
             inputSize = this.operands.size();
         Decimal[] input = this.operands.subList(this.operands.size() - inputSize, this.operands.size()).toArray(new Decimal[0]).clone();
-        Method opMethod = this.getClass().getDeclaredMethod(op.getKey(), Decimal[].class);
-        opMethod.setAccessible(true);
-        Decimal[] output = (Decimal[]) opMethod.invoke(this, new Object[]{input});
+        Decimal[] output = op.getFunc().apply(input);
         for (int i = 0; i < input.length; i++)
             this.operands.removeLast();
         Collections.addAll(this.operands, output);
-        Operation operation = new Operation(input, output, op.getKey());
+        Operation operation = new Operation(input, output, op.getName());
         this.operations.add(operation);
     }
 

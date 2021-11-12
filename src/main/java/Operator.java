@@ -1,27 +1,25 @@
-import java.util.Map;
+import java.util.function.Function;
 
-public class Operator<String, Integer> implements Map.Entry<String, Integer> {
+public class Operator {
+    private final Function<Decimal[], Decimal[]> func;
+    private final Integer inputSize;
     private final String name;
-    private Integer inputSize;
 
-    public Operator(String name, Integer inputSize) {
+    public Operator(String name, Function<Decimal[], Decimal[]> func, Integer inputSize) {
         this.name = name;
+        this.func = func;
         this.inputSize = inputSize;
     }
 
-    @Override
-    public String getKey() {
+    public Function<Decimal[], Decimal[]> getFunc() {
+        return func;
+    }
+
+    public Integer getInputSize() {
+        return inputSize;
+    }
+
+    public String getName() {
         return name;
-    }
-
-    @Override
-    public Integer getValue() {
-        return inputSize;
-    }
-
-    @Override
-    public Integer setValue(Integer value) {
-        inputSize = value;
-        return inputSize;
     }
 }
