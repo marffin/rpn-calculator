@@ -26,6 +26,9 @@ class ExpressionTest {
         assertEquals("17", expr.formatStack());
         RuntimeException ex = assertThrows(RuntimeException.class, () -> expr.feed("+", 11));
         assertEquals("operator + (position 11): insufficient parameters", ex.getMessage());
+        expr.feed("2.0", 1);
+        expr.feed("+", 3);
+        assertEquals("19", expr.formatStack());
     }
 
     @Test
@@ -40,6 +43,9 @@ class ExpressionTest {
         assertEquals("11", expr.formatStack());
         RuntimeException ex = assertThrows(RuntimeException.class, () -> expr.feed("-", 11));
         assertEquals("operator - (position 11): insufficient parameters", ex.getMessage());
+        expr.feed("2.0", 1);
+        expr.feed("-", 3);
+        assertEquals("9", expr.formatStack());
     }
 
     @Test
@@ -54,6 +60,9 @@ class ExpressionTest {
         assertEquals("135", expr.formatStack());
         RuntimeException ex = assertThrows(RuntimeException.class, () -> expr.feed("*", 11));
         assertEquals("operator * (position 11): insufficient parameters", ex.getMessage());
+        expr.feed("2.0", 1);
+        expr.feed("*", 3);
+        assertEquals("270", expr.formatStack());
     }
 
     @Test

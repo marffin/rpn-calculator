@@ -15,7 +15,7 @@ public class Expression {
         operators.put("-", new Operator("subtract", this::subtract, 2));
         operators.put("*", new Operator("multiply", this::multiply, 2));
         operators.put("/", new Operator("divide", this::divide, 2));
-        operators.put("sqrt", new Operator("clear", this::sqrt, 1));
+        operators.put("sqrt", new Operator("sqrt", this::sqrt, 1));
         operators.put("clear", new Operator("clear", this::clear, -1));
     }
 
