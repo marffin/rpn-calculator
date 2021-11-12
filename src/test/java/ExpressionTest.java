@@ -29,7 +29,7 @@ class ExpressionTest {
     }
 
     @Test
-    void feedSubstract() {
+    void feedSubtract() {
         Expression expr = new Expression();
         expr.feed("5", 1);
         expr.feed("3", 3);
@@ -133,10 +133,22 @@ class ExpressionTest {
     }
 
     @Test
+    void feedUndoClear() {
+        Expression expr = new Expression();
+        expr.feed("5", 1);
+        expr.feed("3", 3);
+        assertEquals("5 3", expr.formatStack());
+        expr.feed("clear", 5);
+        assertEquals("", expr.formatStack());
+        expr.feed("undo", 11);
+        assertEquals("5 3", expr.formatStack());
+    }
+
+    @Test
     void feedUnsupported() {
         Expression expr = new Expression();
         UnsupportedOperationException ex = assertThrows(UnsupportedOperationException.class, () -> expr.feed("abc", 1));
-        assertEquals("operator abc (position 1): unsupported operator: abc", ex.getMessage());
+        assertEquals("operator abc (position 1): unsupported operator", ex.getMessage());
     }
 
     @Test

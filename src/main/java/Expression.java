@@ -12,7 +12,7 @@ public class Expression {
 
     public Expression() {
         operators.put("+", new Operator("add", this::add, 2));
-        operators.put("-", new Operator("subtract", this::substract, 2));
+        operators.put("-", new Operator("subtract", this::subtract, 2));
         operators.put("*", new Operator("multiply", this::multiply, 2));
         operators.put("/", new Operator("divide", this::divide, 2));
         operators.put("sqrt", new Operator("clear", this::sqrt, 1));
@@ -38,7 +38,7 @@ public class Expression {
                             undo();
                             break;
                         default:
-                            throw new RuntimeException(this.log("Unsupported operator: %s"));
+                            throw new UnsupportedOperationException(this.log("unsupported operator"));
                     }
                 }
             } catch (InvocationTargetException e) {
@@ -86,7 +86,7 @@ public class Expression {
         return new Decimal[]{new Decimal(val)};
     }
 
-    private Decimal[] substract(Decimal[] decimals) {
+    private Decimal[] subtract(Decimal[] decimals) {
         Decimal d1 = decimals[0];
         Decimal d2 = decimals[1];
         double val = d1.getVal() - d2.getVal();
@@ -108,7 +108,7 @@ public class Expression {
         Decimal d1 = decimals[0];
         Decimal d2 = decimals[1];
         if (d2.getVal() == 0)
-            throw new ArithmeticException("divide by zero");
+            throw new ArithmeticException(this.log("divide by zero"));
         if (d2.getIsInteger() && d1.getIsInteger()) {
             int v1 = (int)d2.getVal();
             int v2 = (int)d1.getVal();
@@ -122,7 +122,7 @@ public class Expression {
     private Decimal[] sqrt(Decimal[] decimals) {
         Decimal d1 = decimals[0];
         if (d1.getVal() < 0)
-            throw new ArithmeticException("square root of negative value: " + d1.toString());
+            throw new ArithmeticException(this.log("square root of negative value: " + d1.toString()));
         return new Decimal[]{new Decimal(Math.sqrt(d1.getVal()))};
     }
 
